@@ -49,6 +49,7 @@
 
 ```
 body:{
+    id: number,
     title: string, 
     text: string,
     author: string,
@@ -97,6 +98,7 @@ body:{
    
 ```
 body:{
+    id: number,
     title: string, 
     text: string,
     author: string,

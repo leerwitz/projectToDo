@@ -55,6 +55,19 @@ func GetAllTask(database *sql.DB) http.HandlerFunc {
 	}
 }
 
+// func rowTaskById(database *sql.DB, writer *http.ResponseWriter, task *Task) (*sql.Result, error) {
+// 	query := "SELECT id , title, text, author, urgent FROM task WHERE id=$1"
+// 	row := database.QueryRow(query, task.Id)
+// 	if err := row.Err(); err != nil {
+// 		if err == sql.ErrNoRows {
+// 			http.Error(*writer, err.Error(), http.StatusNotFound)
+// 		} else {
+// 			http.Error(*writer, err.Error(), http.StatusInternalServerError)
+// 		}
+// 		return
+// 	}
+// }
+
 func GetTaskByID(database *sql.DB) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		query := "SELECT id , title, text, author, urgent FROM task WHERE id=$1"
@@ -82,7 +95,7 @@ func GetTaskByID(database *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		if err := row.Scan(&task.Title, &task.Text, &task.Author, &task.Urgent); err != nil {
+		if err := row.Scan(&task.Id, &task.Title, &task.Text, &task.Author, &task.Urgent); err != nil {
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -107,22 +120,67 @@ func PostTask(database *sql.DB) http.HandlerFunc {
 
 		defer request.Body.Close()
 
-		query := `INSERT INTO task tittle=$1, text=$2, author=$3, urgent=$4`
-		result, err := database.Exec(query, task.Title, task.Text, task.Author, task.Urgent)
+		query := `INSERT INTO task (title, text, author, urgent) VALUES ($1, $2, $3, $4) RETURNING id`
+		err := database.QueryRow(query, task.Title, task.Text, task.Author, task.Urgent).Scan(&task.Id)
 
 		if err != nil {
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		Id, err := result.LastInsertId()
+
+		writer.Header().Set("Content-Type", "application/json")
+		writer.WriteHeader(http.StatusCreated)
+
+		if err := json.NewEncoder(writer).Encode(task); err != nil {
+			http.Error(writer, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+}
+
+// func postTaskIntoDB(task *Task, database *sql.DB, writer *http.ResponseWriter) error {
+// 	query := `INSERT INTO task (title, text, author, urgent) VALUES ($1, $2, $3, $4) RETURNING id`
+// 	err := database.QueryRow(query, (*task).Title, (*task).Text, (*task).Author, (*task).Urgent).Scan(task.Id)
+
+// 	if err != nil {
+// 		http.Error(*writer, err.Error(), http.StatusInternalServerError)
+// 	}
+// 	return err
+// }
+
+func PutTaskById(database *sql.DB) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		variables := mux.Vars(request)
+
+		var (
+			task Task
+			err  error
+		)
+
+		if err := json.NewDecoder(request.Body).Decode(&task); err != nil {
+			http.Error(writer, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		defer request.Body.Close()
+
+		task.Id, err = strconv.ParseInt(variables["id"], 10, 64)
+
+		if err != nil {
+			http.Error(writer, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		query := `UPDATE task SET title = $1, text = $2, author = $3, urgent = $4 WHERE id = $5`
+		result, err := database.Exec(query, task.Title, task.Text, task.Author, task.Urgent, task.Id)
+
 		if err != nil {
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
 			return
 		}
-
-		task.Id = Id
 
 		numRows, err := result.RowsAffected()
+
 		if err != nil {
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
 			return
@@ -130,9 +188,18 @@ func PostTask(database *sql.DB) http.HandlerFunc {
 
 		writer.Header().Set("Content-Type", "application/json")
 		if numRows == 0 {
-			writer.WriteHeader(http.StatusOK)
-		} else {
+			query := `INSERT INTO task (title, text, author, urgent) VALUES ($1, $2, $3, $4) RETURNING id`
+			err := database.QueryRow(query, task.Title, task.Text, task.Author, task.Urgent).Scan(&task.Id)
+
+			if err != nil {
+				http.Error(writer, err.Error(), http.StatusInternalServerError)
+			}
+			if err != nil {
+				return
+			}
 			writer.WriteHeader(http.StatusCreated)
+		} else {
+			writer.WriteHeader(http.StatusOK)
 		}
 
 		if err := json.NewEncoder(writer).Encode(task); err != nil {
@@ -142,10 +209,42 @@ func PostTask(database *sql.DB) http.HandlerFunc {
 	}
 }
 
+func DeleteTaskById(database *sql.DB) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+
+		variables := mux.Vars(request)
+		id, err := strconv.ParseInt(variables["id"], 10, 64)
+		if err != nil {
+			http.Error(writer, err.Error(), http.StatusBadRequest)
+			return
+		}
+		query := `DELETE FROM task WHERE id=$1`
+		result, err := database.Exec(query, id)
+		if err != nil {
+			http.Error(writer, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		rowsNum, err := result.RowsAffected()
+
+		if err != nil {
+			http.Error(writer, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		writer.Header().Set("Content-Type", "application/json")
+		if rowsNum == 0 {
+			writer.WriteHeader(http.StatusNoContent)
+		} else {
+			writer.WriteHeader(http.StatusOK)
+		}
+
+	}
+}
+
 func main() {
 
 	driverName := "postgres"
-	databaseName := "user=postgres password=1980 dbname=mydb host=10.0.2.15 port=5432 sslmode=disable"
+	databaseName := "user=postgres password=1980 dbname=postgres host=10.0.2.15 port=5432 sslmode=disable"
 	database, err := sql.Open(driverName, databaseName)
 	if err != nil {
 		log.Fatal(err)
@@ -165,6 +264,9 @@ func main() {
 
 	router.HandleFunc("/task", GetAllTask(database)).Methods("GET")
 	router.HandleFunc("/task/{id}", GetTaskByID(database)).Methods("GET")
+	router.HandleFunc("/task", PostTask(database)).Methods("POST")
+	router.HandleFunc("/task/{id}", PutTaskById(database)).Methods("PUT")
+	router.HandleFunc("/task/{id}", DeleteTaskById(database)).Methods("DELETE")
 
 	http.ListenAndServe(":8080", router)
 }
