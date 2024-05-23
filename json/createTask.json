@@ -1,6 +1,6 @@
 {
     "title": "My second task",
     "text": "This is my first task that I created on the server using POST method, I am very happy that I was able to implement POST methods for the first time , and also GET method thanks to which you can now read this text :) ",
-    "author": "leerwitz",
+    "author" : "leerwitz",
     "urgent": false
 }

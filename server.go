@@ -241,6 +241,50 @@ func DeleteTaskById(database *sql.DB) http.HandlerFunc {
 	}
 }
 
+func PatchTaskById(database *sql.DB) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		var (
+			task Task
+			err  error
+		)
+
+		variables := mux.Vars(request)
+
+		if err := json.NewDecoder(request.Body).Decode(&task); err != nil {
+			http.Error(writer, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		defer request.Body.Close()
+
+		if task.Id, err = strconv.ParseInt(variables["id"], 10, 64); err != nil {
+			http.Error(writer, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		query := `UPDATE task
+		SET
+			title = COALESCE($1, title),
+			text = COALESCE($2, text),
+			author = COALESCE($3,author),
+			urgent = COALESCE($4, urgent)
+		WHERE id = $5;
+		`
+		_, err = database.Exec(query, task.Title, task.Text, task.Author, task.Urgent, task.Id)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				http.Error(writer, err.Error(), http.StatusNotFound)
+			} else {
+				http.Error(writer, err.Error(), http.StatusInternalServerError)
+			}
+			return
+		}
+
+		writer.Header().Set("Content-Type", "application/json")
+		writer.WriteHeader(http.StatusNoContent)
+	}
+}
+
 func main() {
 
 	driverName := "postgres"
@@ -266,6 +310,7 @@ func main() {
 	router.HandleFunc("/task/{id}", GetTaskByID(database)).Methods("GET")
 	router.HandleFunc("/task", PostTask(database)).Methods("POST")
 	router.HandleFunc("/task/{id}", PutTaskById(database)).Methods("PUT")
+	router.HandleFunc("/task/{id}", PatchTaskById(database)).Methods("PATCH")
 	router.HandleFunc("/task/{id}", DeleteTaskById(database)).Methods("DELETE")
 
 	http.ListenAndServe(":8080", router)
