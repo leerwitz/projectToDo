@@ -22,7 +22,7 @@ type Task struct {
 
 func GetAllTask(database *sql.DB) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
-		query := "SELECT id , title, text, author, urgent FROM task"
+		query := "SELECT id , title, text, author, urgent FROM task" // GetAll
 		rows, err := database.Query(query)
 		if err != nil {
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
@@ -43,7 +43,7 @@ func GetAllTask(database *sql.DB) http.HandlerFunc {
 		if err := rows.Err(); err != nil {
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
 			return
-		}
+		} // GetAll
 		writer.Header().Set("Content-Type", "application/json")
 		writer.WriteHeader(http.StatusOK)
 
@@ -70,7 +70,7 @@ func GetAllTask(database *sql.DB) http.HandlerFunc {
 
 func GetTaskByID(database *sql.DB) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
-		query := "SELECT id , title, text, author, urgent FROM task WHERE id=$1"
+		query := "SELECT id , title, text, author, urgent FROM task WHERE id=$1" //GetById
 		variables := mux.Vars(request)
 		var (
 			err  error
@@ -98,7 +98,7 @@ func GetTaskByID(database *sql.DB) http.HandlerFunc {
 		if err := row.Scan(&task.Id, &task.Title, &task.Text, &task.Author, &task.Urgent); err != nil {
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
 			return
-		}
+		} //GetById
 
 		writer.Header().Set("Content-Type", "application/json")
 		writer.WriteHeader(http.StatusOK)
