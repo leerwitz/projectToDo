@@ -8,42 +8,19 @@ import (
 	"net/http"
 	"strconv"
 
+	. "github.com/leerwitz/projectToDo/internal/task"
+
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
 )
 
-type Task struct {
-	Id     int64
-	Title  string
-	Text   string
-	Author string
-	Urgent bool
-}
-
 func GetAllTask(database *sql.DB) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
-		query := "SELECT id , title, text, author, urgent FROM task" // GetAll
-		rows, err := database.Query(query)
+		tasks, err := GetAll(database)
 		if err != nil {
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
 			return
 		}
-
-		defer rows.Close()
-		var tasks []Task
-
-		for rows.Next() {
-			var curTask Task
-			if err := rows.Scan(&curTask.Id, &curTask.Title, &curTask.Text, &curTask.Author, &curTask.Urgent); err != nil {
-				http.Error(writer, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			tasks = append(tasks, curTask)
-		}
-		if err := rows.Err(); err != nil {
-			http.Error(writer, err.Error(), http.StatusInternalServerError)
-			return
-		} // GetAll
 		writer.Header().Set("Content-Type", "application/json")
 		writer.WriteHeader(http.StatusOK)
 
@@ -55,22 +32,8 @@ func GetAllTask(database *sql.DB) http.HandlerFunc {
 	}
 }
 
-// func rowTaskById(database *sql.DB, writer *http.ResponseWriter, task *Task) (*sql.Result, error) {
-// 	query := "SELECT id , title, text, author, urgent FROM task WHERE id=$1"
-// 	row := database.QueryRow(query, task.Id)
-// 	if err := row.Err(); err != nil {
-// 		if err == sql.ErrNoRows {
-// 			http.Error(*writer, err.Error(), http.StatusNotFound)
-// 		} else {
-// 			http.Error(*writer, err.Error(), http.StatusInternalServerError)
-// 		}
-// 		return
-// 	}
-// }
-
 func GetTaskByID(database *sql.DB) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
-		query := "SELECT id , title, text, author, urgent FROM task WHERE id=$1" //GetById
 		variables := mux.Vars(request)
 		var (
 			err  error
@@ -84,9 +47,8 @@ func GetTaskByID(database *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		row := database.QueryRow(query, task.Id)
-
-		if err := row.Err(); err != nil {
+		task, err = GetById(database, task.Id)
+		if err != nil {
 			if err == sql.ErrNoRows {
 				http.Error(writer, err.Error(), http.StatusNotFound)
 			} else {
@@ -94,12 +56,6 @@ func GetTaskByID(database *sql.DB) http.HandlerFunc {
 			}
 			return
 		}
-
-		if err := row.Scan(&task.Id, &task.Title, &task.Text, &task.Author, &task.Urgent); err != nil {
-			http.Error(writer, err.Error(), http.StatusInternalServerError)
-			return
-		} //GetById
-
 		writer.Header().Set("Content-Type", "application/json")
 		writer.WriteHeader(http.StatusOK)
 		if err := json.NewEncoder(writer).Encode(task); err != nil {
@@ -120,9 +76,7 @@ func PostTask(database *sql.DB) http.HandlerFunc {
 
 		defer request.Body.Close()
 
-		query := `INSERT INTO task (title, text, author, urgent) VALUES ($1, $2, $3, $4) RETURNING id`
-		err := database.QueryRow(query, task.Title, task.Text, task.Author, task.Urgent).Scan(&task.Id)
-
+		err := Post(database, &task)
 		if err != nil {
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
 			return
@@ -137,16 +91,6 @@ func PostTask(database *sql.DB) http.HandlerFunc {
 		}
 	}
 }
-
-// func postTaskIntoDB(task *Task, database *sql.DB, writer *http.ResponseWriter) error {
-// 	query := `INSERT INTO task (title, text, author, urgent) VALUES ($1, $2, $3, $4) RETURNING id`
-// 	err := database.QueryRow(query, (*task).Title, (*task).Text, (*task).Author, (*task).Urgent).Scan(task.Id)
-
-// 	if err != nil {
-// 		http.Error(*writer, err.Error(), http.StatusInternalServerError)
-// 	}
-// 	return err
-// }
 
 func PutTaskById(database *sql.DB) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
@@ -171,15 +115,7 @@ func PutTaskById(database *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		query := `UPDATE task SET title = $1, text = $2, author = $3, urgent = $4 WHERE id = $5`
-		result, err := database.Exec(query, task.Title, task.Text, task.Author, task.Urgent, task.Id)
-
-		if err != nil {
-			http.Error(writer, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		numRows, err := result.RowsAffected()
+		numRows, err := Put(database, &task)
 
 		if err != nil {
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
@@ -188,14 +124,10 @@ func PutTaskById(database *sql.DB) http.HandlerFunc {
 
 		writer.Header().Set("Content-Type", "application/json")
 		if numRows == 0 {
-			query := `INSERT INTO task (title, text, author, urgent) VALUES ($1, $2, $3, $4) RETURNING id`
-			err := database.QueryRow(query, task.Title, task.Text, task.Author, task.Urgent).Scan(&task.Id)
 
+			err := Post(database, &task)
 			if err != nil {
 				http.Error(writer, err.Error(), http.StatusInternalServerError)
-			}
-			if err != nil {
-				return
 			}
 			writer.WriteHeader(http.StatusCreated)
 		} else {
@@ -218,14 +150,14 @@ func DeleteTaskById(database *sql.DB) http.HandlerFunc {
 			http.Error(writer, err.Error(), http.StatusBadRequest)
 			return
 		}
-		query := `DELETE FROM task WHERE id=$1`
-		result, err := database.Exec(query, id)
-		if err != nil {
-			http.Error(writer, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		rowsNum, err := result.RowsAffected()
-
+		// query := `DELETE FROM task WHERE id=$1`
+		// result, err := database.Exec(query, id)
+		// if err != nil {
+		// 	http.Error(writer, err.Error(), http.StatusInternalServerError)
+		// 	return
+		// }
+		// rowsNum, err := result.RowsAffected()
+		rowsNum, err := Delete(database, id)
 		if err != nil {
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
 			return
@@ -233,9 +165,9 @@ func DeleteTaskById(database *sql.DB) http.HandlerFunc {
 
 		writer.Header().Set("Content-Type", "application/json")
 		if rowsNum == 0 {
-			writer.WriteHeader(http.StatusNoContent)
+			http.Error(writer, "Task not found", http.StatusNotFound)
 		} else {
-			writer.WriteHeader(http.StatusOK)
+			writer.WriteHeader(http.StatusNoContent)
 		}
 
 	}
@@ -262,21 +194,17 @@ func PatchTaskById(database *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		query := `UPDATE task
-		SET
-			title = COALESCE($1, title),
-			text = COALESCE($2, text),
-			author = COALESCE($3,author),
-			urgent = COALESCE($4, urgent)
-		WHERE id = $5;
-		`
-		_, err = database.Exec(query, task.Title, task.Text, task.Author, task.Urgent, task.Id)
+		paramsCount, numRows, err := Patch(database, &task)
 		if err != nil {
-			if err == sql.ErrNoRows {
-				http.Error(writer, err.Error(), http.StatusNotFound)
-			} else {
-				http.Error(writer, err.Error(), http.StatusInternalServerError)
-			}
+			http.Error(writer, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if paramsCount == 0 {
+			http.Error(writer, "invalid query syntax", http.StatusBadRequest)
+			return
+		}
+		if numRows == 0 {
+			http.Error(writer, "invalid query syntax", http.StatusNotFound)
 			return
 		}
 
