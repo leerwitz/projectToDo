@@ -22,6 +22,7 @@ func GetAllTask(database *sql.DB) http.HandlerFunc {
 			return
 		}
 		writer.Header().Set("Content-Type", "application/json")
+		writer.Header().Set("Access-Control-Allow-Origin", "http://127.0.0.1:5500")
 		writer.WriteHeader(http.StatusOK)
 
 		if err := json.NewEncoder(writer).Encode(tasks); err != nil {
