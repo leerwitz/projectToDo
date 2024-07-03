@@ -20,6 +20,7 @@ div {
 }
 
 .task {
+  position: relative;
   background-color: #f4f4f4;
   border: 1px solid #ccc;
   padding: 10px;
@@ -36,7 +37,6 @@ div {
 }
 
 .modal {
-  display: none; 
   position: fixed; 
   z-index: 1; 
   left: 0; 
@@ -68,4 +68,44 @@ div {
   color: black; 
   text-decoration: none; 
   cursor: pointer; 
+}
+
+.input-text {
+  width: 30em;
+  height: 8em;
+  border: 1px solid #888; 
+}
+
+.close-button {
+  color: #fefefe;
+  background-color: red;
+}
+
+.success-button {
+  color: #fefefe;
+  background-color: rgb(9, 167, 9);
+}
+
+.success-header {
+  color : green;
+  font-weight : bold;
+}
+
+.edit-button {
+  position: absolute;
+  right: 10%;
+  bottom: 5%;
+  color: #fefefe;
+  background-color: blue;
+}
+
+.right-bottom {
+  position: absolute;
+  right: 5%;
+  bottom: 5%;  
+}
+
+.urgent {
+  height: 3%;
+  width: 3%;
 }

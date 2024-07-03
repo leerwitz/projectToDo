@@ -3,7 +3,6 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -14,6 +13,21 @@ import (
 	_ "github.com/lib/pq"
 )
 
+func enableCors(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		writer.Header().Set("Access-Control-Allow-Origin", "*")
+		writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+		writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		if request.Method == http.MethodOptions {
+			writer.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		next.ServeHTTP(writer, request)
+	})
+}
+
 func GetAllTask(database *sql.DB) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		tasks, err := GetAll(database)
@@ -22,7 +36,7 @@ func GetAllTask(database *sql.DB) http.HandlerFunc {
 			return
 		}
 		writer.Header().Set("Content-Type", "application/json")
-		writer.Header().Set("Access-Control-Allow-Origin", "http://127.0.0.1:5500")
+		// writer.Header().Set("Access-Control-Allow-Origin", "http://127.0.0.1:5500")
 		writer.WriteHeader(http.StatusOK)
 
 		if err := json.NewEncoder(writer).Encode(tasks); err != nil {
@@ -84,6 +98,7 @@ func PostTask(database *sql.DB) http.HandlerFunc {
 		}
 
 		writer.Header().Set("Content-Type", "application/json")
+		// writer.Header().Set("Access-Control-Allow-Origin", "http://127.0.0.1:5500")
 		writer.WriteHeader(http.StatusCreated)
 
 		if err := json.NewEncoder(writer).Encode(task); err != nil {
@@ -219,6 +234,7 @@ func main() {
 	driverName := "postgres"
 	databaseName := "user=postgres password=1980 dbname=postgres host=10.0.2.15 port=5432 sslmode=disable"
 	database, err := sql.Open(driverName, databaseName)
+
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -231,16 +247,22 @@ func main() {
 	defer database.Close()
 
 	router := mux.NewRouter()
-	router.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
-		fmt.Fprintf(writer, "hello world from %s\n", request.URL.Path)
-	})
+	router.Use(enableCors)
 
 	router.HandleFunc("/task", GetAllTask(database)).Methods("GET")
 	router.HandleFunc("/task/{id}", GetTaskByID(database)).Methods("GET")
-	router.HandleFunc("/task", PostTask(database)).Methods("POST")
+	router.HandleFunc("/task", PostTask(database)).Methods("POST", "OPTIONS")
 	router.HandleFunc("/task/{id}", PutTaskById(database)).Methods("PUT")
 	router.HandleFunc("/task/{id}", PatchTaskById(database)).Methods("PATCH")
-	router.HandleFunc("/task/{id}", DeleteTaskById(database)).Methods("DELETE")
+	router.HandleFunc("/task/{id}", DeleteTaskById(database)).Methods("DELETE", "OPTIONS")
+
+	router.NotFoundHandler = http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method == `OPTIONS` {
+			writer.WriteHeader(http.StatusNoContent)
+		} else {
+			http.Error(writer, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
 
 	http.ListenAndServe(":8080", router)
 }
