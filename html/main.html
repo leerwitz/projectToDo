@@ -11,21 +11,13 @@
       <h1 class="center">My project TO DO</h1>
 
       <div id="search">
-        <input type="text" placeholder="Введите название или id задачи " style="width: 80%; height: 20px;">
+        <input type="text" placeholder="Введите название или id задачи в формате #id " style="width: 80%; height: 20px;">
+        <button id="searchButton" type="button" style="height: 25px;">Найти</button>
         <button id="createButton" type="button" class="success-button" style="height: 25px;">Создать</button>
       </div>
       <div id="taskList"></div>
 
       <script src="../js/loadAllTasks.js"></script>
-      <script>
-        let createButton = document.getElementById('createButton');
-
-        createButton.addEventListener('click', function() {
-          window.location.href = 'http://127.0.0.1:5500/html/createTask.html';
-        });
-        
-      </script>
-
     </main>
 </body>
 </html>

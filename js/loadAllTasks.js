@@ -13,30 +13,7 @@ async function allTaskLoad() {
         let tasks = await response.json();
         let taskList = document.getElementById(`taskList`);
         
-        tasks.forEach(task => {
-            let taskCurr = document.createElement(`div`);
-            let taskCurrNotation;
-            
-            taskCurr.className = `task`;
-            taskCurr.innerHTML = `<h3>Title: ${task.title ? task.title : `No title`} 
-            Author: ${task.author}   ID: #${task.id} </h3>`;
-            taskCurr.id = task.id;
-            taskList.append(taskCurr);
-
-            taskCurrNotation = getStrTaskFromObj(task);
-
-            taskCurr.insertAdjacentHTML('afterend', taskCurrNotation);
-            taskCurr.addEventListener(`click`, () => {
-                let notation = taskCurr.nextSibling;
-                    notation.classList.toggle('hidden');
-            });
-
-            let editButton = taskCurr.nextElementSibling.querySelector('.edit-button');
-            let deleteButton = taskCurr.nextElementSibling.querySelector(`.close-button`);
-            deleteButton.addEventListener('click', deleteTask);
-            editButton.addEventListener('click', editTask);
-        });
-
+        tasks.forEach(task => addTaskToTaskList(task));
 
     } catch(err) {
         console.error(`In function allTaskLoad `, err);
@@ -62,6 +39,33 @@ async function deleteTask(event) {
     }
 
 
+}
+
+function addTaskToTaskList(task) {
+    let taskCurr = document.createElement(`div`);
+    let taskCurrNotation;
+    
+    taskCurr.className = `task`;
+    taskCurr.innerHTML = `
+    <h3>Title: ${task.title ? task.title : `No title`} 
+    Author: ${task.author}
+    Urgent: <span ${task.urgent ? 'style = "color : green">Yes' : 'style= "color : red">No'}</span>    
+    ID: #${task.id}</h3>`;
+    taskCurr.id = task.id;
+    taskList.append(taskCurr);
+
+    taskCurrNotation = getStrTaskFromObj(task);
+
+    taskCurr.insertAdjacentHTML('afterend', taskCurrNotation);
+    taskCurr.addEventListener(`click`, () => {
+        let notation = taskCurr.nextSibling;
+            notation.classList.toggle('hidden');
+    });
+
+    let editButton = taskCurr.nextElementSibling.querySelector('.edit-button');
+    let deleteButton = taskCurr.nextElementSibling.querySelector(`.close-button`);
+    deleteButton.addEventListener('click', deleteTask);
+    editButton.addEventListener('click', editTask);
 }
 
 function getTaskFromDiv(div) {
@@ -90,6 +94,60 @@ function cancelEditTask(task, noEditTask) {
     task.innerHTML = noEditTask
 }
 
+function replaceTask(task, newTask) {
+    return function () {
+        task.replaceWith(newTask)
+        let editButton = newTask.querySelector('.edit-button');
+        let deleteButton = newTask.querySelector(`.close-button`);
+        deleteButton.addEventListener('click', deleteTask);
+        editButton.addEventListener('click', editTask);
+    }
+}
+
+function editButtonEvent(task) {
+
+    return async function(event) {
+        let inputs = task.querySelectorAll('input');
+        let newTask = {};
+        let headerTask = task.previousElementSibling;
+        try {
+            inputs.forEach(input => {
+                if(input.type == 'checkbox'){
+                    newTask[input.name[0].toLowerCase() + input.name.slice(1)] = input.checked;
+                } else {
+                    newTask[input.name[0].toLowerCase() + input.name.slice(1)] = input.value;
+                }
+            });
+
+            let response = await fetch(`http://localhost:8080/task/${task.previousElementSibling.id}`, {
+                method : 'PATCH',
+                headers : {
+                    'Content-Type' : 'applications/json'
+                },
+                body : JSON.stringify(newTask),
+            });
+
+            if(!response.ok) {
+                alert('ll');
+                throw new Error("Ошибка: " + response.statusText);
+            }
+
+            newTask.id = task.previousElementSibling.id; 
+            task.insertAdjacentHTML('afterend', getStrTaskFromObj(newTask));
+            task.nextElementSibling.classList.remove('hidden');
+            task.replaceWith(task.nextElementSibling);
+            headerTask.innerHTML = `
+                <h3>Title: ${newTask.title ? newTask.title : `No title`} 
+                Author: ${newTask.author} 
+                Urgent: <span ${task.urgent ? 'style = "color : green">Yes' : 'style= "color : red">No'}</span>    
+                ID: #${newTask.id}</h3>`;
+
+        } catch(err) {
+            alert(err.message);
+        } 
+    }
+}
+
 async function editTask(event) {
     let task = this.closest('div');
     let taskFields = task.querySelectorAll('p');
@@ -98,7 +156,7 @@ async function editTask(event) {
     task.querySelector('h2').innerHTML = `
     <div>
     <strong>Title: </strong>
-    <input type="text" placeholder="Введите название" pattern="/{2,250}/v" 
+    <input name="title" type="text" placeholder="Введите название" pattern="/{2,250}/v" 
     value="${task.querySelector('h2').textContent}" required>
     </div>`;
     taskFields.forEach(field => {
@@ -124,16 +182,58 @@ async function editTask(event) {
     let cancelButton = task.querySelector(`.close-button`);
     let editButton = task.querySelector('.edit-button');
 
-    cancelButton.addEventListener('click', () => {
-        task.replaceWith(noEditTask)
-        let editButton = noEditTask.querySelector('.edit-button');
-        let deleteButton = noEditTask.querySelector(`.close-button`);
-        deleteButton.addEventListener('click', deleteTask);
-        editButton.addEventListener('click', editTask);
-    });
+    cancelButton.addEventListener('click', replaceTask(task, noEditTask));
+
+    editButton.addEventListener('click', editButtonEvent(task));
 
 }
 
+async function searchTaskEvent(event) {
+    let input = this.previousElementSibling.value;
+    let taskList = document.getElementById(`taskList`);
+    try {
+
+        if(input[0] == '#') {
+            let response =  await fetch(`http://localhost:8080/task/${input.slice(1)}`);
+            
+            if(!response.ok) {
+                throw new Error("Ошибка: " + response.statusText)
+            }
+
+            let result = await response.json();
+            taskList.innerHTML = '';
+            addTaskToTaskList(result);
+
+        } else {
+            let url = new URL('http://localhost:8080/task');
+            url.searchParams.append(`title`, input);
+
+            let response = await fetch(url);
+
+            if(!response.ok) {
+                throw new Error(`Ошибка: ` + response.statusText);
+            }
+
+            let result =  await response.json();
+            taskList.innerHTML = '';
+
+            result.forEach(task => addTaskToTaskList(task));
+        }
+
+    } catch(err) {
+        console.error(err.message);
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+    let searchButton = document.getElementById('searchButton');
+    let createButton = document.getElementById('createButton');
+
     allTaskLoad();
+    createButton.addEventListener('click', function() {
+      window.location.href = 'http://127.0.0.1:5500/html/createTask.html';
+    });
+    
+    searchButton.addEventListener('click', searchTaskEvent);
+
 })

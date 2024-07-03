@@ -30,13 +30,22 @@ func enableCors(next http.Handler) http.Handler {
 
 func GetAllTask(database *sql.DB) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
-		tasks, err := GetAll(database)
+		var tasks []Task
+		var err error
+		patternTitle := request.URL.Query().Get(`title`)
+
+		if patternTitle != `` {
+			tasks, err = GetByTitle(database, patternTitle)
+		} else {
+			tasks, err = GetAll(database)
+		}
+
 		if err != nil {
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
 			return
 		}
+
 		writer.Header().Set("Content-Type", "application/json")
-		// writer.Header().Set("Access-Control-Allow-Origin", "http://127.0.0.1:5500")
 		writer.WriteHeader(http.StatusOK)
 
 		if err := json.NewEncoder(writer).Encode(tasks); err != nil {

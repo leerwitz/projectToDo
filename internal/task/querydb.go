@@ -16,6 +16,29 @@ type Task struct {
 	Urgent *bool  `json:"urgent,omitempty"`
 }
 
+func GetByTitle(database *sql.DB, title string) ([]Task, error) {
+	query := "SELECT id , title, text, author, urgent FROM task WHERE title LIKE $1"
+	rows, err := database.Query(query, title+`%`)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+	var tasks []Task
+
+	for rows.Next() {
+		var curTask Task
+
+		if err := rows.Scan(&curTask.Id, &curTask.Title, &curTask.Text, &curTask.Author, &curTask.Urgent); err != nil {
+			return nil, err
+		}
+		tasks = append(tasks, curTask)
+	}
+
+	return tasks, err
+}
+
 func GetAll(database *sql.DB) ([]Task, error) {
 	query := "SELECT id , title, text, author, urgent FROM task"
 	rows, err := database.Query(query)
@@ -109,19 +132,20 @@ func Patch(database *sql.DB, task *Task) (int64, int64, error) {
 
 	if task.Urgent != nil {
 		paramsCount++
-		updates = append(updates, fmt.Sprintf("author = $%d", paramsCount))
+		updates = append(updates, fmt.Sprintf("urgent = $%d", paramsCount))
 		params = append(params, task.Urgent)
 	}
 
 	if paramsCount == 0 {
 		return 0, 0, nil
 	}
+
 	paramsCount++
 	query := "UPDATE task SET " + strings.Join(updates, ", ") + fmt.Sprintf(" WHERE id = $%d", paramsCount)
-	fmt.Println(query)
+	// fmt.Println(query)
 	params = append(params, task.Id)
-
 	result, err := database.Exec(query, params...)
+
 	if err != nil {
 		return paramsCount, 0, err
 	}
