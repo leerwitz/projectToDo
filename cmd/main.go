@@ -5,12 +5,27 @@ import (
 	"log"
 	"net/http"
 
-	. "github.com/leerwitz/projectToDo/internal/handlers"
-
 	"github.com/gorilla/mux"
-	_ "github.com/lib/pq"
+	_ "github.com/leerwitz/projectToDo/docs"
+	. "github.com/leerwitz/projectToDo/internal/handlers"
+	"github.com/rs/cors"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
+// @title Task API
+// @version 1.0
+// @description This is a sample server for managing tasks.
+// @termsOfService http://swagger.io/terms/
+
+// @contact.name API Support
+// @contact.url http://www.swagger.io/support
+// @contact.email support@swagger.io
+
+// @license.name Apache 2.0
+// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @host localhost:8080
+// @BasePath /
 func main() {
 
 	driverName := "postgres"
@@ -29,22 +44,17 @@ func main() {
 	defer database.Close()
 
 	router := mux.NewRouter()
-	router.Use(enableCors)
 
-	router.HandleFunc("/task", GetAllTask(database)).Methods("GET")
+	router.HandleFunc("/task", GetAllTaskByTitle(database)).Methods("GET")
 	router.HandleFunc("/task/{id}", GetTaskByID(database)).Methods("GET")
 	router.HandleFunc("/task", PostTask(database)).Methods("POST", "OPTIONS")
 	router.HandleFunc("/task/{id}", PutTaskById(database)).Methods("PUT")
 	router.HandleFunc("/task/{id}", PatchTaskById(database)).Methods("PATCH")
 	router.HandleFunc("/task/{id}", DeleteTaskById(database)).Methods("DELETE", "OPTIONS")
 
-	router.NotFoundHandler = http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		if request.Method == `OPTIONS` {
-			writer.WriteHeader(http.StatusNoContent)
-		} else {
-			http.Error(writer, "Method not allowed", http.StatusMethodNotAllowed)
-		}
-	})
+	router.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
 
-	http.ListenAndServe(":8080", router)
+	handler := cors.Default().Handler(router)
+	log.Fatal(http.ListenAndServe(":8080", handler))
+
 }

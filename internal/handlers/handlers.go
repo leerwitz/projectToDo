@@ -12,7 +12,7 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func enableCors(next http.Handler) http.Handler {
+func EnableCors(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		writer.Header().Set("Access-Control-Allow-Origin", "*")
 		writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
@@ -27,7 +27,16 @@ func enableCors(next http.Handler) http.Handler {
 	})
 }
 
-func GetAllTask(database *sql.DB) http.HandlerFunc {
+// @Summary Get all tasks by title
+// @Description Дает содержимое обо всех задачах, название которых начитнается с аргумента
+// title из query запроса, если он не указан, то выводит все задачи.
+// @Tags handlers
+// @Produce  json
+// @Param title query string false "Фильтр по названию"
+// @Success 200 {array} task.Task
+// @Failure 500 {object} HTTPError
+// @Router /task [get]
+func GetAllTaskByTitle(database *sql.DB) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		var tasks []Task
 		var err error
@@ -55,6 +64,17 @@ func GetAllTask(database *sql.DB) http.HandlerFunc {
 	}
 }
 
+// GetTaskByID godoc
+// @Summary Get task by ID
+// @Description Получает задачи по ее айди.
+// @Tags handlers
+// @Produce  json
+// @Param id path int true "Task ID"
+// @Success 200 {object} task.Task
+// @Failure 400 {object} HTTPError
+// @Failure 404 {object} HTTPError
+// @Failure 500 {object} HTTPError
+// @Router /task/{id} [get]
 func GetTaskByID(database *sql.DB) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		variables := mux.Vars(request)
@@ -88,6 +108,16 @@ func GetTaskByID(database *sql.DB) http.HandlerFunc {
 	}
 }
 
+// @Summary Post task
+// @Description Создает задачу по json из тела запроса
+// @Tags handlers
+// @Accept  json
+// @Produce  json
+// @Success 201 {object} task.Task
+// @Failure 400 {object} HTTPError
+// @Failure 404 {object} HTTPError
+// @Failure 500 {object} HTTPError
+// @Router /task [post]
 func PostTask(database *sql.DB) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		var task Task
@@ -106,7 +136,6 @@ func PostTask(database *sql.DB) http.HandlerFunc {
 		}
 
 		writer.Header().Set("Content-Type", "application/json")
-		// writer.Header().Set("Access-Control-Allow-Origin", "http://127.0.0.1:5500")
 		writer.WriteHeader(http.StatusCreated)
 
 		if err := json.NewEncoder(writer).Encode(task); err != nil {
@@ -165,29 +194,35 @@ func PutTaskById(database *sql.DB) http.HandlerFunc {
 	}
 }
 
+// @Summary Delete task by ID
+// @Description Удаляет задачу по ее айди.
+// @Tags handlers
+// @Param id path int true "Task ID"
+// @Success 204 "No content"
+// @Failure 400 {object} HTTPError
+// @Failure 404 {object} HTTPError
+// @Failure 500 {object} HTTPError
+// @Router /task/{id} [delete]
 func DeleteTaskById(database *sql.DB) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 
 		variables := mux.Vars(request)
 		id, err := strconv.ParseInt(variables["id"], 10, 64)
+
 		if err != nil {
 			http.Error(writer, err.Error(), http.StatusBadRequest)
 			return
 		}
-		// query := `DELETE FROM task WHERE id=$1`
-		// result, err := database.Exec(query, id)
-		// if err != nil {
-		// 	http.Error(writer, err.Error(), http.StatusInternalServerError)
-		// 	return
-		// }
-		// rowsNum, err := result.RowsAffected()
+
 		rowsNum, err := Delete(database, id)
+
 		if err != nil {
 			http.Error(writer, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		writer.Header().Set("Content-Type", "application/json")
+
 		if rowsNum == 0 {
 			http.Error(writer, "Task not found", http.StatusNotFound)
 		} else {
@@ -197,6 +232,16 @@ func DeleteTaskById(database *sql.DB) http.HandlerFunc {
 	}
 }
 
+// @Summary Patch task by ID
+// @Description Обновляет задачу по ее айди, не удаляя старый и создавая новый объекты,
+// если задачи с таким айди нет выбрасывает 404.
+// @Tags handlers
+// @Param id path int true "Task ID"
+// @Success 204 {object} "No content"
+// @Failure 400 {object} HTTPError
+// @Failure 404 {object} HTTPError
+// @Failure 500 {object} HTTPError
+// @Router /task/{id} [delete]
 func PatchTaskById(database *sql.DB) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		var (

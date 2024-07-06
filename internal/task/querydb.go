@@ -8,12 +8,18 @@ import (
 	_ "github.com/lib/pq"
 )
 
+// @Description Структура задачи на сервере.
 type Task struct {
-	Id     int64  `json:"id"`
-	Title  string `json:"title,omitempty"`
-	Text   string `json:"text,omitempty"`
+	// @Description Id задачи.
+	Id int64 `json:"id"`
+	// @Description Название задачи.
+	Title string `json:"title,omitempty"`
+	// @Description Содержимое задачи.
+	Text string `json:"text,omitempty"`
+	// @Description Автор задачи.
 	Author string `json:"author,omitempty"`
-	Urgent *bool  `json:"urgent,omitempty"`
+	// @Description Важность задачи(является ли она срочной или нет)
+	Urgent *bool `json:"urgent,omitempty"`
 }
 
 func GetByTitle(database *sql.DB, title string) ([]Task, error) {
