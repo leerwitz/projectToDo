@@ -12,6 +12,11 @@ import (
 	_ "github.com/lib/pq"
 )
 
+type HTTPError struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+}
+
 func EnableCors(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		writer.Header().Set("Access-Control-Allow-Origin", "*")
@@ -27,6 +32,7 @@ func EnableCors(next http.Handler) http.Handler {
 	})
 }
 
+// GetAllTaskByTitle godoc
 // @Summary Get all tasks by title
 // @Description Дает содержимое обо всех задачах, название которых начитнается с аргумента
 // title из query запроса, если он не указан, то выводит все задачи.
@@ -108,6 +114,7 @@ func GetTaskByID(database *sql.DB) http.HandlerFunc {
 	}
 }
 
+// PostTask godoc
 // @Summary Post task
 // @Description Создает задачу по json из тела запроса
 // @Tags handlers
@@ -194,6 +201,8 @@ func PutTaskById(database *sql.DB) http.HandlerFunc {
 	}
 }
 
+//	DeleteTaskById godoc
+//
 // @Summary Delete task by ID
 // @Description Удаляет задачу по ее айди.
 // @Tags handlers
@@ -232,12 +241,13 @@ func DeleteTaskById(database *sql.DB) http.HandlerFunc {
 	}
 }
 
+// PatchTaskById godoc
 // @Summary Patch task by ID
 // @Description Обновляет задачу по ее айди, не удаляя старый и создавая новый объекты,
 // если задачи с таким айди нет выбрасывает 404.
 // @Tags handlers
 // @Param id path int true "Task ID"
-// @Success 204 {object} "No content"
+// @Success 204 "No content"
 // @Failure 400 {object} HTTPError
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
