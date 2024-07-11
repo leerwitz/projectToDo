@@ -2,8 +2,10 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/gorilla/mux"
 	_ "github.com/leerwitz/projectToDo/docs"
@@ -27,9 +29,22 @@ import (
 // @host localhost:8080
 // @BasePath /
 func main() {
+	dbHost := os.Getenv("DB_HOST")
+	dbPort := os.Getenv("DB_PORT")
+	dbUser := os.Getenv("DB_USER")
+	dbPassword := os.Getenv("DB_PASSWORD")
+	dbName := os.Getenv("DB_NAME")
+
+	log.Printf("user=%s password=%s dbname=%s host=%s port=%s sslmode=disable",
+		dbUser, dbPassword, dbName, dbHost, dbPort)
 
 	driverName := "postgres"
-	databaseName := "user=postgres password=1980 dbname=postgres host=10.0.2.15 port=5432 sslmode=disable"
+	databaseName := fmt.Sprintf("user=%s password=%s dbname=%s host=%s port=%s sslmode=disable",
+		dbUser, dbPassword, dbName, dbHost, dbPort)
+
+	// driverName := "postgres"
+	// databaseName := "user=postgres password=1980 dbname=postgres host=10.0.2.15 port=5432 sslmode=disable"
+
 	database, err := sql.Open(driverName, databaseName)
 
 	if err != nil {
@@ -42,19 +57,25 @@ func main() {
 	}
 
 	defer database.Close()
+	log.Println("Successfully connected to the database!")
 
 	router := mux.NewRouter()
 
 	router.HandleFunc("/task", GetAllTaskByTitle(database)).Methods("GET")
 	router.HandleFunc("/task/{id}", GetTaskByID(database)).Methods("GET")
 	router.HandleFunc("/task", PostTask(database)).Methods("POST", "OPTIONS")
-	router.HandleFunc("/task/{id}", PutTaskById(database)).Methods("PUT")
+	// router.HandleFunc("/task/{id}", PutTaskById(database)).Methods("PUT")
 	router.HandleFunc("/task/{id}", PatchTaskById(database)).Methods("PATCH")
 	router.HandleFunc("/task/{id}", DeleteTaskById(database)).Methods("DELETE", "OPTIONS")
 
 	router.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
 
-	handler := cors.Default().Handler(router)
+	handler := cors.New(cors.Options{
+		AllowedOrigins:   []string{"http://127.0.0.1:5500"},
+		AllowedMethods:   []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Content-Type", "Authorization"},
+		AllowCredentials: true,
+	}).Handler(router)
 	log.Fatal(http.ListenAndServe(":8080", handler))
 
 }

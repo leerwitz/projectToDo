@@ -152,55 +152,6 @@ func PostTask(database *sql.DB) http.HandlerFunc {
 	}
 }
 
-func PutTaskById(database *sql.DB) http.HandlerFunc {
-	return func(writer http.ResponseWriter, request *http.Request) {
-		variables := mux.Vars(request)
-
-		var (
-			task Task
-			err  error
-		)
-
-		if err := json.NewDecoder(request.Body).Decode(&task); err != nil {
-			http.Error(writer, err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		defer request.Body.Close()
-
-		task.Id, err = strconv.ParseInt(variables["id"], 10, 64)
-
-		if err != nil {
-			http.Error(writer, err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		numRows, err := Put(database, &task)
-
-		if err != nil {
-			http.Error(writer, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		writer.Header().Set("Content-Type", "application/json")
-		if numRows == 0 {
-
-			err := Post(database, &task)
-			if err != nil {
-				http.Error(writer, err.Error(), http.StatusInternalServerError)
-			}
-			writer.WriteHeader(http.StatusCreated)
-		} else {
-			writer.WriteHeader(http.StatusOK)
-		}
-
-		if err := json.NewEncoder(writer).Encode(task); err != nil {
-			http.Error(writer, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	}
-}
-
 //	DeleteTaskById godoc
 //
 // @Summary Delete task by ID
@@ -251,7 +202,7 @@ func DeleteTaskById(database *sql.DB) http.HandlerFunc {
 // @Failure 400 {object} HTTPError
 // @Failure 404 {object} HTTPError
 // @Failure 500 {object} HTTPError
-// @Router /task/{id} [delete]
+// @Router /task/{id} [patch]
 func PatchTaskById(database *sql.DB) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		var (

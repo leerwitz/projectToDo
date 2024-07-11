@@ -128,13 +128,14 @@ function editButtonEvent(task) {
             });
 
             if(!response.ok) {
-                alert('ll');
                 throw new Error("Ошибка: " + response.statusText);
             }
 
             newTask.id = task.previousElementSibling.id; 
             task.insertAdjacentHTML('afterend', getStrTaskFromObj(newTask));
             task.nextElementSibling.classList.remove('hidden');
+            task.nextElementSibling.querySelector(`.edit-button`).addEventListener(`click`, editTask);
+            task.nextElementSibling.querySelector(`.close-button`).addEventListener(`click`, deleteTask);
             task.replaceWith(task.nextElementSibling);
             headerTask.innerHTML = `
                 <h3>Title: ${newTask.title ? newTask.title : `No title`} 
@@ -152,22 +153,27 @@ async function editTask(event) {
     let task = this.closest('div');
     let taskFields = task.querySelectorAll('p');
     let noEditTask = task.cloneNode(true);
-    
+    let isChecked = task.querySelector('span').textContent == 'Yes';
+
     task.querySelector('h2').innerHTML = `
     <div>
     <strong>Title: </strong>
     <input name="title" type="text" placeholder="Введите название" pattern="/{2,250}/v" 
     value="${task.querySelector('h2').textContent}" required>
     </div>`;
+    
     taskFields.forEach(field => {
         if(field.id == `Urgent`) {
+        
             field.innerHTML = `
             <div>
                 <strong>Urgent: </strong>
-                <input class="urgent" name="Urgent" type="checkbox" class="input-text" 
-                checked="${field.querySelector('span').textContent == 'Yes' ? true : false}" required>
+                <input class="urgent" name="Urgent" type="checkbox" class="input-text" required>
             </div>`
-            } else {
+            field.querySelector(`input`).checked = isChecked;
+            
+        } else {
+        
             field.innerHTML = `<div>
             <strong>${field.id}: </strong>
             <input name=${field.id} type="text" class="input-text" 

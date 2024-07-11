@@ -147,6 +147,45 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "description": "Удаляет задачу по ее айди.",
+                "tags": [
+                    "handlers"
+                ],
+                "summary": "Delete task by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Task ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.HTTPError"
+                        }
+                    }
+                }
+            },
+            "patch": {
                 "description": "Обновляет задачу по ее айди, не удаляя старый и создавая новый объекты,",
                 "tags": [
                     "handlers"
