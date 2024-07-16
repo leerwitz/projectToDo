@@ -24,7 +24,7 @@ func EnableCors(next http.Handler) http.Handler {
 		writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
 		if request.Method == http.MethodOptions {
-			writer.WriteHeader(http.StatusNoContent)
+			writer.WriteHeader(http.StatusOK)
 			return
 		}
 
@@ -186,7 +186,7 @@ func DeleteTaskById(database *sql.DB) http.HandlerFunc {
 		if rowsNum == 0 {
 			http.Error(writer, "Task not found", http.StatusNotFound)
 		} else {
-			writer.WriteHeader(http.StatusNoContent)
+			writer.WriteHeader(http.StatusOK)
 		}
 
 	}
@@ -239,6 +239,6 @@ func PatchTaskById(database *sql.DB) http.HandlerFunc {
 		}
 
 		writer.Header().Set("Content-Type", "application/json")
-		writer.WriteHeader(http.StatusNoContent)
+		writer.WriteHeader(http.StatusOK)
 	}
 }
