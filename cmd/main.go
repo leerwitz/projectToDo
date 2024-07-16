@@ -14,6 +14,9 @@ import (
 	httpSwagger "github.com/swaggo/http-swagger"
 )
 
+const serverPort string = `http://127.0.0.1:5500`
+const listenPort string = `:8080`
+
 // @title Task API
 // @version 1.0
 // @description This is a sample server for managing tasks.
@@ -35,15 +38,9 @@ func main() {
 	dbPassword := os.Getenv("DB_PASSWORD")
 	dbName := os.Getenv("DB_NAME")
 
-	log.Printf("user=%s password=%s dbname=%s host=%s port=%s sslmode=disable",
-		dbUser, dbPassword, dbName, dbHost, dbPort)
-
 	driverName := "postgres"
 	databaseName := fmt.Sprintf("user=%s password=%s dbname=%s host=%s port=%s sslmode=disable",
 		dbUser, dbPassword, dbName, dbHost, dbPort)
-
-	// driverName := "postgres"
-	// databaseName := "user=postgres password=1980 dbname=postgres host=10.0.2.15 port=5432 sslmode=disable"
 
 	database, err := sql.Open(driverName, databaseName)
 
@@ -64,18 +61,17 @@ func main() {
 	router.HandleFunc("/task", GetAllTaskByTitle(database)).Methods("GET")
 	router.HandleFunc("/task/{id}", GetTaskByID(database)).Methods("GET")
 	router.HandleFunc("/task", PostTask(database)).Methods("POST", "OPTIONS")
-	// router.HandleFunc("/task/{id}", PutTaskById(database)).Methods("PUT")
 	router.HandleFunc("/task/{id}", PatchTaskById(database)).Methods("PATCH")
 	router.HandleFunc("/task/{id}", DeleteTaskById(database)).Methods("DELETE", "OPTIONS")
 
 	router.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
 
 	handler := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://127.0.0.1:5500"},
+		AllowedOrigins:   []string{serverPort},
 		AllowedMethods:   []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Content-Type", "Authorization"},
 		AllowCredentials: true,
 	}).Handler(router)
-	log.Fatal(http.ListenAndServe(":8080", handler))
+	log.Fatal(http.ListenAndServe(listenPort, handler))
 
 }

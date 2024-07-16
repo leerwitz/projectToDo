@@ -55,27 +55,6 @@ async function getTaskFromForm(event) {
     }
 }
 
-// export async function deleteTask(event) {
-//     let task = this.closest('div').previousElementSibling;
-//     let response = await fetch(`http://localhost:8080/task/${task.id}`,{
-//         method : `DELETE`,
-//     });
-
-//     try {    
-//         if(!response.ok) {
-//             throw new Error(`Ошибка` + response.statusText);
-//         }
-
-//         console.log(response.statusText);
-//         task.remove();
-//         this.closest('div').remove();
-//     } catch (err) {
-//         alert(err.message);
-//     }
-
-
-// }
-
 
 let createButton = document.getElementById('createButton');
 let closeButtons = document.querySelectorAll('.close-button');

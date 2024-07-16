@@ -91,6 +91,10 @@ div {
   font-weight : bold;
 }
 
+.main-button {
+  height: 25px;
+}
+
 .edit-button {
   position: absolute;
   right: 10%;
@@ -108,4 +112,9 @@ div {
 .urgent {
   height: 3%;
   width: 3%;
+}
+
+.search-line {
+  width: 80%; 
+  height: 20px;
 }

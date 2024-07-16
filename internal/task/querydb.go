@@ -148,7 +148,6 @@ func Patch(database *sql.DB, task *Task) (int64, int64, error) {
 
 	paramsCount++
 	query := "UPDATE task SET " + strings.Join(updates, ", ") + fmt.Sprintf(" WHERE id = $%d", paramsCount)
-	// fmt.Println(query)
 	params = append(params, task.Id)
 	result, err := database.Exec(query, params...)
 

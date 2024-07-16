@@ -11,7 +11,7 @@ COPY . .
 RUN go build -o main ./cmd/main.go
 
 # Вторая стадия сборки
-FROM alpine:latest
+FROM alpine:3.20.1
 
 WORKDIR /app
 RUN apk add --no-cache bash

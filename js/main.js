@@ -1,10 +1,11 @@
 'use strict'
 
-// import { deleteTask } from "./buttonEvents.js";
+const serverURL = `http://localhost:8080/`
+const createTaskLocation = `http://127.0.0.1:5500/html/createTask.html`
 
 async function allTaskLoad() {
     try {
-        let response = await fetch(`http://localhost:8080/task`);
+        let response = await fetch(serverURL + `task`);
         
         if (!response.ok) {
             throw new Error(response.statusText);
@@ -21,8 +22,8 @@ async function allTaskLoad() {
 }
 
 async function deleteTask(event) {
-    let task = this.closest('div').previousElementSibling;
-    let response = await fetch(`http://localhost:8080/task/${task.id}`,{
+    let task = event.currentTarget.closest('div').previousElementSibling;
+    let response = await fetch(serverURL + `task/${task.id}`,{
         method : `DELETE`,
     });
 
@@ -31,7 +32,6 @@ async function deleteTask(event) {
             throw new Error(`Ошибка` + response.statusText);
         }
 
-        console.log(response.statusText);
         task.remove();
         this.closest('div').remove();
     } catch (err) {
@@ -119,7 +119,7 @@ function editButtonEvent(task) {
                 }
             });
 
-            let response = await fetch(`http://localhost:8080/task/${task.previousElementSibling.id}`, {
+            let response = await fetch(serverURL + `task/${task.previousElementSibling.id}`, {
                 method : 'PATCH',
                 headers : {
                     'Content-Type' : 'applications/json'
@@ -200,7 +200,7 @@ async function searchTaskEvent(event) {
     try {
 
         if(input[0] == '#') {
-            let response =  await fetch(`http://localhost:8080/task/${input.slice(1)}`);
+            let response =  await fetch(serverURL + `task/${input.slice(1)}`);
             
             if(!response.ok) {
                 throw new Error("Ошибка: " + response.statusText)
@@ -211,7 +211,7 @@ async function searchTaskEvent(event) {
             addTaskToTaskList(result);
 
         } else {
-            let url = new URL('http://localhost:8080/task');
+            let url = new URL(serverURL + 'task');
             url.searchParams.append(`title`, input);
 
             let response = await fetch(url);
@@ -237,7 +237,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     allTaskLoad();
     createButton.addEventListener('click', function() {
-      window.location.href = 'http://127.0.0.1:5500/html/createTask.html';
+      window.location.href = createTaskLocation;
     });
     
     searchButton.addEventListener('click', searchTaskEvent);
