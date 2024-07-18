@@ -14,7 +14,7 @@ import (
 	httpSwagger "github.com/swaggo/http-swagger"
 )
 
-const serverPort string = `http://127.0.0.1:5500`
+const clientURl string = `http://localhost`
 const listenPort string = `:8080`
 
 // @title Task API
@@ -67,7 +67,7 @@ func main() {
 	router.PathPrefix("/swagger/").Handler(httpSwagger.WrapHandler)
 
 	handler := cors.New(cors.Options{
-		AllowedOrigins:   []string{serverPort},
+		AllowedOrigins:   []string{clientURl},
 		AllowedMethods:   []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Content-Type", "Authorization"},
 		AllowCredentials: true,

@@ -1,7 +1,7 @@
 'use strict'
 
 const serverURL = `http://localhost:8080/`
-const createTaskLocation = `http://127.0.0.1:5500/html/createTask.html`
+const createTaskLocation = `http://localhost/html/createTask.html`
 
 async function allTaskLoad() {
     try {
