@@ -23,47 +23,47 @@
 ## Установка Docker:
 ### На Linux(ubuntu)
 #### Шаг 1: Удалите старые версии Docker (если они установлены)
-    ```bash
+```bash
     sudo apt-get remove docker docker-engine docker.io containerd runc
-    ```
+```
 
 #### Шаг 2: Обновите индекс пакетов и установите необходимые пакеты для установки через HTTPS
-    ```bash
+```bash
     sudo apt-get update
     sudo apt-get install \
         ca-certificates \
         curl \
         gnupg \
         lsb-release
-    ```
+```
 
 #### Шаг 3: Добавьте официальный GPG ключ Docker
-    ```bash
+```bash
     echo \
     "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
     $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-    ```
+```
 
 
 #### Шаг 4: Добавьте репозиторий Docker в источники APT
-    ```bash
+```bash
     echo \
     "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
     $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-    ```
+```
 
 
 #### Шаг 5: Обновите индекс пакетов и установите Docker Engine
-    ```bash
+```bash
     sudo apt-get update
     sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-    ```
+```
 
 
 #### Шаг 6: Проверьте, что Docker установлен корректно
-    ```bash
+```bash
     sudo docker run hello-world
-    ```
+```
 Если вы увидите сообщение "Hello from Docker!", значит Docker установлен и работает правильно.
 ---
 
@@ -94,12 +94,13 @@
 
 1. После перезагрузки запустите Docker Desktop.
 2. Откройте командную строку (CMD) или PowerShell и выполните команду:
-   ```bash
+```bash
    docker --version
+```
 3. Выполните тестовый запуск контейнера:
-    ```bash
+```bash
     docker run hello-world
-    ```
+```
 Если вы увидите сообщение "Hello from Docker!", значит Docker установлен и работает правильно.
 ---
 ### На MacOS
@@ -133,28 +134,29 @@
 
 1. Откройте терминал (Terminal).
 2. Введите команду:
-   ```bash
+```bash
    docker --version
+```
 3. Выполните тестовый запуск контейнера:
-    ```bash
+```bash
     docker run hello-world
-    ```
+```
 Если вы увидите сообщение "Hello from Docker!", значит Docker установлен и работает правильно.
 
 ## Создание и запуск Docker контейнера
 
 Зайдите в корневую директорию проекта(projectToDo) и введите в терминал: 
-    ```bash
+```bash
     sudo docker-compose up -d --build
-    ```
+```
 Чтобы удалить контейнер введите:
-    ```bash
+```bash
     sudo docker-compose down
-    ```
+```
 Чтобы посмотреть логи контейнера используйте:
-    ```bash
+```bash
     sudo docker-compose logs
-    ```
+```
 
 ## Использование
 После сборки контейнер зайдите на http://localhost в браузере,
