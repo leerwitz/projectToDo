@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    depends_on:
+      - db
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=projectToDo
+      - DB_PASSWORD=fuckingPassword
+      - DB_USER=postgres
+    ports:
+      - "8080:8080" 
+    command: ["./wait-for-it.sh", "db:5432", "--", "./main"]
+  
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: fuckingPassword
+      POSTGRES_DB: projectToDo
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./tables:/docker-entrypoint-initdb.d
+
+  nginx:
+    image: nginx:1.27.0
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./html:/usr/share/nginx/html
+      - ./js:/usr/share/nginx/js
+      - ./styles:/usr/share/nginx/styles
+    depends_on:
+      - web
+
+volumes:
+  postgres_data:
